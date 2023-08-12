@@ -15,6 +15,7 @@ function App() {
     width: "",
     height: "",
   });
+
   const [currentImage, setCurrentImage] = useState(null);
   const [prevImages, setPrevImages] = useState([]);
   const [quota, setQuota] = useState(null);
