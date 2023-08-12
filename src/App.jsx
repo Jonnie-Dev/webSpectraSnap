@@ -1,5 +1,7 @@
 import { useState } from "react";
+import axios from "axios";
 import APIForm from "./components/APIForm";
+import Gallery from "./components/Gallery";
 import "./App.css";
 
 const ACCESS_KEY = import.meta.env.VITE_APP_ACCESS_KEY;
@@ -13,6 +15,54 @@ function App() {
     width: "",
     height: "",
   });
+  const [currentImage, setCurrentImage] = useState(null);
+  const [prevImages, setPrevImages] = useState([]);
+  const [quota, setQuota] = useState(null);
+
+  const getQuota = async () => {
+    const res = await axios.get(
+      `https://api.apiflash.com/v1/urltoimage/quota?access_key=${ACCESS_KEY}`
+    );
+    const data = res.data;
+    setQuota(data);
+  };
+
+  const callAPI = async (query) => {
+    const res = await axios.get(query);
+    const data = res.data;
+
+    if (data.url == null) {
+      alert("Oops! Something went wrong with that query, let's try again!");
+    } else {
+      setCurrentImage(data.url);
+      setPrevImages((images) => [...images, data.url]);
+      reset();
+      getQuota();
+    }
+  };
+
+  const makeQuery = () => {
+    let wait_until = "network_idle";
+    let response_type = "json";
+    let fail_on_status = "400%2C404%2C500-511";
+    let url_starter = "https://";
+    let fullURL = url_starter + inputs.url;
+
+    let query = `https://api.apiflash.com/v1/urltoimage?access_key=${ACCESS_KEY}&url=${fullURL}&format=${inputs.format}&width=${inputs.width}&height=${inputs.height}&no_cookie_banners=${inputs.no_cookie_banners}&no_ads=${inputs.no_ads}&wait_until=${wait_until}&response_type=${response_type}&fail_on_status=${fail_on_status}`;
+
+    callAPI(query).catch(console.error);
+  };
+
+  const reset = () => {
+    setInputs({
+      url: "",
+      format: "",
+      no_ads: "",
+      no_cookie_banners: "",
+      width: "",
+      height: "",
+    });
+  };
 
   const submitForm = () => {
     let defaultValues = {
@@ -23,15 +73,29 @@ function App() {
       height: "1080",
     };
 
-    if (inputs.url == "" || inputs.url == " ") {
+    if (inputs.url.trim() == "") {
       alert("You forgot to submit an url!");
+    } else {
+      for (const [key, value] of Object.entries(inputs)) {
+        if (value == "") {
+          inputs[key] = defaultValues[key];
+        }
+      }
+      makeQuery();
     }
   };
 
   return (
     <div className="whole-page">
       <h1>Build Your Own Screenshot! 📸</h1>
-
+      {quota ? (
+        <p className="quota">
+          {" "}
+          Remaining API calls: {quota.remaining} out of {quota.limit}
+        </p>
+      ) : (
+        <p></p>
+      )}
       <APIForm
         inputs={inputs}
         handleChange={(e) =>
@@ -40,8 +104,39 @@ function App() {
             [e.target.name]: e.target.value.trim(),
           }))
         }
-        //   onSubmit={submitForm}
+        onSubmit={submitForm}
       />
+      {currentImage ? (
+        <img
+          className="screenshot"
+          src={currentImage}
+          alt="Screenshot returned"
+        />
+      ) : (
+        <div> </div>
+      )}
+      <div className="container">
+        <h3> Current Query Status: </h3>
+        <div className="container">
+          <Gallery images={prevImages} />
+        </div>
+        <p>
+          https://api.apiflash.com/v1/urltoimage?access_key=ACCESS_KEY
+          <br></br>
+          &url={inputs.url} <br></br>
+          &format={inputs.format} <br></br>
+          &width={inputs.width}
+          <br></br>
+          &height={inputs.height}
+          <br></br>
+          &no_cookie_banners={inputs.no_cookie_banners}
+          <br></br>
+          &no_ads={inputs.no_ads}
+          <br></br>
+        </p>
+      </div>
+
+      <br></br>
       <br></br>
     </div>
   );
