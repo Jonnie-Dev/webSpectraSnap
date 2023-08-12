@@ -21,6 +21,11 @@ li.form {
   width: 300px;
 }
 
+h1,
+div > h2 {
+  color: #cadcf2;
+}
+
 input {
   font-family: "Poppins";
   border-radius: 8px;
